@@ -1,14 +1,16 @@
 __attribute__((section(".multiboot")))
 const unsigned int multiboot_header[] = {
-    0x1BADB002,   // Magic number
-    0x00,         // Flags
-    -(0x1BADB002) // Checksum
+    0x1BADB002,
+    0x00,
+    -(0x1BADB002)
 };
 
 #include "kernel.h"
 #include "memory/string_builtin.h"
+#include "autocomplete.h"
 
-// glibc'siz ortam için özel string fonksiyonlarını bağla
+
+// glibc'siz ortam için özel string fonksiyonları
 #define strlen   my_strlen
 #define strcpy   my_strcpy
 #define strncpy  my_strncpy
@@ -54,13 +56,11 @@ static void redraw_input_line(void)
     char *video = (char*)VGA_ADDRESS;
     int start = cursor_row * MAX_COLS * 2;
 
-    // Satırı temizle
     for (int i = 0; i < MAX_COLS; i++) {
         video[start + i * 2] = ' ';
         video[start + i * 2 + 1] = 0x0F;
     }
 
-    // --- Path gösterimi ---
     const char *path = fs_get_current_path();
     int color = (my_strlen(path) == 1) ? 0x0A : 0x0B; // kök için yeşil, alt dizin için mavi
     int i = 0;
@@ -70,21 +70,17 @@ static void redraw_input_line(void)
         i++;
     }
 
-    // '>' ve boşluk
     video[start + i * 2] = '>';
     video[start + i * 2 + 1] = 0x0F; i++;
     video[start + i * 2] = ' ';
     video[start + i * 2 + 1] = 0x0F; i++;
 
-    // --- Kullanıcı girişi ---
     for (int j = 0; j < input_length; j++) {
         video[start + (i + j) * 2] = input_buffer[j];
         video[start + (i + j) * 2 + 1] = 0x0F;
     }
 
-    // imleci prompt + giriş sonuna taşı
-    int plen = i; // path + "> " toplam uzunluğu
-    move_cursor(cursor_row, plen + cursor_pos);
+    move_cursor(cursor_row, prompt_len() + cursor_pos);
 }
 
 void terminal_run(void)
@@ -92,29 +88,22 @@ void terminal_run(void)
     clear_screen();
     print("Mini Terminal v6 Ready.\nType 'help' for commands.\n\n", 0x0A);
 
-    // varsayılan path boşsa kök ayarla (güvenlik için)
     if (my_strlen(fs_get_current_path()) == 0)
         fs_set_current_path("/");
 
-    // durum değişkenlerini SIFIRLA (ilk çizimden önce!)
     input_length = 0;
     history_count = 0;
     history_index = -1;
     g_should_exit_terminal = 0;
     cursor_pos = 0;
 
-    // ilk prompt’u çiz
     redraw_input_line();
 
     while (!g_should_exit_terminal)
     {
-        // ❌ Artık sabit 2 ile imleç taşımıyoruz; redraw/left-right kendisi ayarlıyor.
         char c = read_key();
         if (!c) continue;
 
-        // =========================================================
-        // ENTER
-        // =========================================================
         if (c == '\n') {
             input_buffer[input_length] = '\0';
             print("\n", 0x0F);
@@ -134,12 +123,8 @@ void terminal_run(void)
             continue;
         }
 
-        // =========================================================
-        // BACKSPACE
-        // =========================================================
         else if (c == '\b') {
             if (cursor_pos > 0) {
-                // karakteri sil
                 for (int i = cursor_pos - 1; i < input_length - 1; i++)
                     input_buffer[i] = input_buffer[i + 1];
                 input_length--;
@@ -148,9 +133,6 @@ void terminal_run(void)
             }
         }
 
-        // =========================================================
-        // ↑ Geçmiş geri
-        // =========================================================
         else if (c == 1) {
             if (history_index > 0) {
                 history_index--;
@@ -161,9 +143,6 @@ void terminal_run(void)
             }
         }
 
-        // =========================================================
-        // ↓ Geçmiş ileri
-        // =========================================================
         else if (c == 2) {
             if (history_index < history_count - 1) {
                 history_index++;
@@ -179,37 +158,21 @@ void terminal_run(void)
             redraw_input_line();
         }
 
-        // =========================================================
-        // ← Sol ok
-        // =========================================================
         else if (c == 3) {
             if (cursor_pos > 0) cursor_pos--;
             move_cursor(cursor_row, prompt_len() + cursor_pos);
         }
 
-        // =========================================================
-        // → Sağ ok
-        // =========================================================
         else if (c == 4) {
             if (cursor_pos < input_length) cursor_pos++;
             move_cursor(cursor_row, prompt_len() + cursor_pos);
         }
 
-        // =========================================================
-        // TAB — autocomplete
-        // =========================================================
-        else if (c == '\t') {
-            if (strncmp(input_buffer, "ec", 2) == 0) {
-                strcpy(input_buffer, "echo ");
-                input_length = strlen(input_buffer);
-                cursor_pos = input_length;
-                redraw_input_line();
-            }
+       else if (c == '\t') {
+            autocomplete_try(input_buffer, &input_length, &cursor_pos);
+            redraw_input_line();
         }
 
-        // =========================================================
-        // Normal karakter — insert mode
-        // =========================================================
         else if (input_length < INPUT_BUFFER_SIZE - 1) {
             for (int i = input_length; i > cursor_pos; i--)
                 input_buffer[i] = input_buffer[i - 1];

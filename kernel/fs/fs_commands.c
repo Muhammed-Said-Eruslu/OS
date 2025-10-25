@@ -112,6 +112,28 @@ void fs_list_files() {
     }
 }
 
+int fs_list_entries(fs_entry_t *out, int max)
+{
+    int count = 0;
+
+    // Geçici: sabit dosya/dizin listesi (örnek)
+    // (Senin fs_list_files() ekran çıktısı veriyor, oradan okuma yok)
+    my_strcpy(out[count].name, "a.txt");
+    out[count].is_dir = 0; count++;
+
+    my_strcpy(out[count].name, "test");
+    out[count].is_dir = 1; count++;
+
+    my_strcpy(out[count].name, "readme.md");
+    out[count].is_dir = 0; count++;
+
+    // Fazla olursa kes
+    if (count > max)
+        count = max;
+
+    return count;
+}
+
 void fs_write_file(const char* name, const char* text) {
     Node* current_dir = fs_get_current_dir();
     Node* existing = find_child(current_dir, name);

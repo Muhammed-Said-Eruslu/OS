@@ -108,6 +108,7 @@ void execute_command(const char *cmd_in)
         print("  sysinfo   - Display system information\n", 0x0F);
         print("  touch     - Create an empty file (or update if exists)\n", 0x0F);
         print("  coreedit  - Open CoreEdit text editor\n", 0x0F);
+        print("  run X.mys - Run commands from script file X.mys\n", 0x0F);
         print("  exit      - Return to desktop\n", 0x0F);
         return;
     }
@@ -201,6 +202,17 @@ void execute_command(const char *cmd_in)
         strcpy(newname, lskip(sp + 1));
         fs_mv(oldname, newname);
         return;
+    }
+    // RUN
+    if (to_lower(cmd[0])=='r' && to_lower(cmd[1])=='u' &&
+    to_lower(cmd[2])=='n' && cmd[3]==' ')
+    {
+    const char *filename = lskip(cmd + 4);
+    if (*filename)
+        fssc_run(filename);
+    else
+        print("Usage: run <script.mys>\n", 0x0C);
+    return;
     }
 
     // REBOOT

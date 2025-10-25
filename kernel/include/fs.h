@@ -18,4 +18,11 @@ void fs_set_current_path(const char *path);
 char *fs_get_current_path(void);
 void fs_touch(const char *filename);
 
+typedef struct {
+    char name[64];
+    int is_dir;
+} fs_entry_t;
+
+int fs_list_entries(fs_entry_t *out, int max);
+
 #endif

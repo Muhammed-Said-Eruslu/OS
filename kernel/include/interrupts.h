@@ -14,6 +14,8 @@ void timer_install(void);
 void timer_handler(void);
 void isr_handler(void);
 void irq_handler(void);
+void timer_wait(unsigned int ticks);
+
 
 // IRQ ASM stubs
 extern void irq0(void);

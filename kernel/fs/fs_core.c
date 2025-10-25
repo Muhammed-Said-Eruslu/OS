@@ -37,6 +37,24 @@ Node* find_child(Node* dir, const char* name)
     return 0;
 }
 
+int fs_exists(const char *path)
+{
+    // Aynı dizinde ismi eşleşen bir child var mı kontrol et
+    Node* dir = fs_get_current_dir();
+    for (int i = 0; i < dir->child_count; i++) {
+        if (my_strcmp(dir->children[i]->name, path) == 0)
+            return 1;  // bulundu
+    }
+    return 0; // yok
+}
+void fs_free(void *ptr)
+{
+    // Bu FS belleği dinamik olarak tahsis etmiyor, o yüzden boş bırak.
+    (void)ptr;
+}
+
+
+
 Node* fs_get_root(void) { return &root; }
 Node* fs_get_current_dir(void) { return current_dir; }
 void fs_set_current_dir(Node* dir) { current_dir = dir; }

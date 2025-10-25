@@ -13,5 +13,6 @@ char *my_strchr(const char *s, int c);
 char *my_strcat(char *dest, const char *src);
 void int_to_str(int num, char *str);
 char *my_strncat(char *dest, const char *src, int n);
+int my_atoi(const char *str);
 
 #endif

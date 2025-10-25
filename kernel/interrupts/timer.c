@@ -1,7 +1,7 @@
 #include "kernel.h"
 #include <stdint.h>
 
-static uint32_t tick = 0;  // Her clock interrupt'ında artacak sayaç
+static volatile uint32_t tick = 0;  // Her clock interrupt'ında artacak sayaç
 
 // PIT (Programmable Interval Timer) frekans ayarlama
 void timer_phase(int hz)
@@ -17,27 +17,17 @@ void timer_handler(void)
 {
     tick++;
 
-    // Her 100 tick’te bir ekrana debug mesajı (isteğe bağlı)
-    // if (tick % 100 == 0)
-    // {
-    //     print("[Timer] Tick: ", 0x0A);
-    //     char buf[16];
-    //     int_to_str(tick, buf);
-    //     print(buf, 0x0A);
-    //     print("\n", 0x0A);
-    // }
-
     // PIC'e End of Interrupt (EOI)
     outb(0x20, 0x20);
 }
 
-// 🔹 Bu fonksiyon terminal komutları tarafından çağrılabilir
+// 🔹 Sayaç değerini döndür
 uint32_t timer_get_ticks(void)
 {
     return tick;
 }
 
-// Kurulum — IRQ0’ı IDT’ye ekler
+// 🔹 Kurulum — IRQ0’ı IDT’ye ekler
 void timer_install(void)
 {
     print("[Timer] Installing...\n", 0x0B);
@@ -49,4 +39,15 @@ void timer_install(void)
     timer_phase(100);
 
     print("[Timer] Initialized (100 Hz)\n", 0x0B);
+}
+
+// 🔹 Script dili (veya kernel) içinde bekleme fonksiyonu
+void timer_wait(unsigned int ms)
+{
+    // 100 Hz olduğundan her tick ≈ 10 ms
+    uint32_t start = tick;
+    uint32_t target_ticks = ms / 10;
+
+    while ((tick - start) < target_ticks)
+        __asm__ __volatile__("hlt");
 }
