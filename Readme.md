@@ -1,303 +1,80 @@
-<div align="center">
-  <img src="docs/images/myos-logo.png" alt="MyOS Logo" width="200"/>
-  <h1>MyOS - Modern İşletim Sistemi Projesi</h1>
-  <p>Minimalist, Güçlü, Özelleştirilebilir</p>
+# MyOS
 
-  [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-  [![Version](https://img.shields.io/badge/version-1.0.0-green.svg)](https://github.com/kullaniciadi/myos/releases)
-  [![Build Status](https://img.shields.io/github/workflow/status/kullaniciadi/myos/CI)](https://github.com/kullaniciadi/myos/actions)
-  [![Contributors](https://img.shields.io/github/contributors/kullaniciadi/myos)](https://github.com/kullaniciadi/myos/graphs/contributors)
-</div>
+x86 (32-bit) mimarisi için sıfırdan yazılmış, GRUB ile önyüklenen küçük bir işletim sistemi çekirdeği.
+Kesme yönetimi, temel donanım sürücüleri, diske kaydedilen bir dosya sistemi, komut geçmişi ve
+otomatik tamamlama destekli bir komut satırı ile çekirdek içinde çalışan bir metin editörü içerir.
 
-## 🌟 Ekran Görüntüleri
+Proje, bir bilgisayarın açılışından kullanıcı komutlarının işlenmesine kadar geçen süreci uygulamalı
+olarak öğrenmek amacıyla geliştirildi. Standart kütüphane (libc) kullanılmaz; string ve bellek
+fonksiyonları dahil her şey proje içinde yazılmıştır.
 
-<div align="center">
-  <img src="docs/images/screenshot1.png" alt="MyOS Boot Screen" width="400"/>
-  <img src="docs/images/screenshot2.png" alt="MyOS Terminal" width="400"/>
-</div>
+*A small hobby x86 kernel written from scratch in C and NASM: interrupts, drivers, a persistent
+file system, a shell with history and tab completion, and an in-kernel text editor.*
 
-# MyOS - Özelleştirilebilir İşletim Sistemi Projesi
+## Özellikler
 
-![MyOS Logo](assets/logo.png)
+- **Önyükleme:** Multiboot başlığı, GRUB ile açılan ISO, özel linker script
+- **Kesmeler:** IDT kurulumu, CPU istisnaları (ISR), donanım kesmeleri (IRQ, PIC yeniden eşleme), Assembly giriş kodları
+- **Sürücüler:** PIT zamanlayıcı, PS/2 klavye (TR / US düzen), VGA metin modu, RTC (gerçek zamanlı saat), ATA disk (sektör okuma/yazma), CPUID ile işlemci bilgisi
+- **Dosya sistemi:** dizin ağacı (`cd ..` ile üst dizine çıkma), dosya oluşturma/okuma/yazma, taşıma ve silme; içerik disk imajına (`fs.img`) kaydedilir
+- **Komut satırı:** ok tuşlarıyla imleç hareketi, komut geçmişi, Tab ile otomatik tamamlama, dosyaya yönlendirme (`echo metin > dosya`)
+- **Metin editörü:** [kilo](https://github.com/antirez/kilo) editöründen esinlenen, çekirdek içinde çalışan editör (Ctrl+S kaydet, Ctrl+Q çık, Ctrl+L klavye düzeni)
 
-## 📝 Proje Açıklaması
+## Komutlar
 
-MyOS, modern ve özelleştirilebilir bir işletim sistemi çekirdeği geliştirme projesidir. Bu proje, işletim sistemlerinin temel bileşenlerini anlamak ve uygulamak amacıyla geliştirilmiştir.
+| Komut | Açıklama |
+|---|---|
+| `help` | Komut listesini gösterir |
+| `clear` | Ekranı temizler |
+| `ls`, `pwd`, `cd <dizin>` | Dizin içeriği, bulunulan dizin, dizin değiştirme |
+| `mkdir <ad>`, `touch <dosya>` | Dizin / boş dosya oluşturma |
+| `cat <dosya>` | Dosya içeriğini yazdırır |
+| `echo <metin> [> dosya]` | Metni yazdırır veya dosyaya yazar |
+| `rm <ad>`, `mv <eski> <yeni>` | Silme, taşıma / yeniden adlandırma |
+| `edit <dosya>` | Dosyayı metin editöründe açar |
+| `setkb tr` / `setkb us` | Klavye düzenini değiştirir |
+| `time`, `sysinfo` | Tarih/saat ve sistem bilgisi |
+| `reboot`, `exit` | Yeniden başlatma, terminalden çıkış |
 
-### Ana Hedefler
-- Minimum donanım gereksinimleriyle çalışabilen hafif bir çekirdek
-- Modüler ve genişletilebilir mimari
-- x86_64 mimarisi desteği
-- Temel bellek yönetimi ve süreç planlaması
-- Basit bir dosya sistemi implementasyonu
+## Derleme ve çalıştırma
 
-### Teknik Özellikler
-- **Kernel Tipi**: Monolitik
-- **Desteklenen Mimariler**: x86_64
-- **Programlama Dili**: C/C++, Assembly
-- **Bootloader**: GRUB2
-- **Bellek Yönetimi**: Sayfalama ve sanal bellek desteği
-
-## 🚀 Kurulum
-
-### Ön Gereksinimler
-- GCC Cross-Compiler (x86_64-elf-gcc)
-- NASM Assembly Derleyicisi
-- QEMU Emülatörü
-- Make build sistemi
-
-### Kurulum Adımları
+Gereksinimler (Linux / WSL): `gcc` (32-bit destekli, `gcc-multilib`), `nasm`, `binutils` (`ld`),
+`qemu-system-i386`.
 
 ```bash
-# Gerekli araçların kurulumu (Ubuntu/Debian)
-sudo apt-get update
-sudo apt-get install build-essential nasm qemu-system-x86 xorriso grub-pc-bin
-
-# Projeyi klonlayın
-git clone https://github.com/kullaniciadi/myos.git
-cd myos
-
-# Build işlemi
-make clean
-make all
+make          # myos.bin çekirdeğini derler
+make run      # QEMU'da fs.img diski ile çalıştırır
+make clean    # derleme çıktılarını siler
 ```
 
-## 💻 Kullanım
+Çekirdek `-m32 -ffreestanding -nostdlib -fno-builtin` bayraklarıyla derlenir ve `linker.ld` ile
+1 MB adresine bağlanır. Önyüklenebilir imaj `myos.iso` olarak depoda bulunur; `iso/` klasöründen
+`grub-mkrescue -o myos.iso iso` ile yeniden üretilebilir.
 
-### Emülatörde Çalıştırma
-```bash
-# QEMU ile çalıştırma
-make run
+## Proje yapısı
 
-# Debug modunda çalıştırma
-make debug
+```text
+kernel/
+  kernel.c            Multiboot başlığı, çekirdek girişi ve terminal döngüsü
+  interrupts/         IDT, ISR, IRQ, PIT zamanlayıcı ve Assembly giriş kodları
+  drivers/            VGA, RTC, ATA disk, CPU bilgisi, sürücü başlatma
+  keyboard/           PS/2 klavye sürücüsü (TR/US düzen)
+  fs/                 Dosya sistemi çekirdeği, yol çözümleme, komutlar, diske kayıt
+  shell/              Komut yorumlayıcı, otomatik tamamlama, sistem bilgisi
+  editor/             Çekirdek içi metin editörü
+  memory/, include/   libc'siz string/bellek fonksiyonları ve başlık dosyaları
+document/             Çekirdek kodu hakkında notlar
+iso/                  GRUB yapılandırması ve önyüklenebilir imaj içeriği
+linker.ld, Makefile   Bağlama ve derleme
+main_gui.c            (Deneysel) LVGL + SDL ile QEMU'yu başlatan masaüstü düğmesi
+dogsos_gui/           (Deneysel) Flutter ile masaüstü arayüz konsepti
 ```
 
-### ISO Oluşturma
-```bash
-# Boot edilebilir ISO oluşturma
-make iso
-```
+## Sınırlamalar
 
-### Gerçek Donanımda Test
-1. `make iso` komutu ile ISO dosyası oluşturun
-2. ISO dosyasını USB belleğe yazın:
-```bash
-sudo dd if=myos.iso of=/dev/sdX bs=4M status=progress
-```
+Bu bir öğrenme projesidir: tek görevlidir, sayfalama (paging) ve kullanıcı modu yoktur, dosya sistemi
+basit ve projeye özeldir. Gerçek donanımda değil QEMU üzerinde test edilmiştir.
 
-## ✨ Özellikler
+## Geliştirici
 
-### Çekirdek Özellikleri
-- [x] Bellek Yönetimi
-  - Sayfalama
-  - Sanal Bellek
-  - Heap Yönetimi
-- [x] Süreç Yönetimi
-  - Temel süreç planlaması
-  - Çoklu görev desteği
-- [x] Dosya Sistemi
-  - Basit VFS implementasyonu
-  - FAT32 desteği
-- [x] Donanım Sürücüleri
-  - PS/2 Klavye sürücüsü
-  - VGA grafik sürücüsü
-
-### Planlanan Özellikler
-- [ ] USB desteği
-- [ ] Ağ stack'i
-- [ ] GUI sistemi
-- [ ] Çoklu CPU desteği
-
-## 🔧 Geliştirme
-
-### Dizin Yapısı
-```
-myos/
-├── kernel/       # Çekirdek kaynak kodları
-├── bootloader/   # Bootloader kodları
-├── drivers/      # Donanım sürücüleri
-├── include/      # Header dosyaları
-├── lib/          # Yardımcı kütüphaneler
-└── docs/         # Dokümantasyon
-```
-
-### 📁 Detaylı Dizin Yapısı ve Açıklamalar
-```
-myos/
-├── kernel/                  # Çekirdek kaynak kodları
-│   ├── core/               # Çekirdek çekirdek bileşenleri
-│   │   ├── memory.c       # Bellek yönetimi
-│   │   ├── process.c      # Süreç yönetimi
-│   │   └── scheduler.c    # Görev planlayıcı
-│   ├── drivers/           # Donanım sürücüleri
-│   │   ├── keyboard/      # Klavye sürücüsü
-│   │   ├── display/       # Ekran sürücüsü
-│   │   └── storage/       # Depolama sürücüleri
-│   └── fs/                # Dosya sistemi
-├── bootloader/            # GRUB2 bootloader yapılandırması
-│   ├── grub.cfg          # GRUB2 konfigürasyonu
-│   └── stage2_eltorito   # ISO boot dosyası
-├── tools/                 # Geliştirme araçları
-│   ├── build-scripts/     # Derleme scriptleri
-│   └── debug-tools/       # Hata ayıklama araçları
-├── docs/                  # Dokümantasyon
-│   ├── images/           # Görseller
-│   ├── api/              # API dokümantasyonu
-│   └── tutorials/        # Öğreticiler
-└── tests/                # Test dosyaları
-    ├── unit/            # Birim testler
-    └── integration/     # Entegrasyon testleri
-```
-
-### 💻 Kod Örnekleri
-
-<details>
-<summary>🔍 Bellek Yönetimi Örneği</summary>
-
-```c
-// kernel/core/memory.c örneği
-void *allocate_page(void) {
-    // Implementation details
-}
-```
-</details>
-
-<details>
-<summary>🔍 Süreç Oluşturma Örneği</summary>
-
-```c
-// kernel/core/process.c örneği
-pid_t create_process(void *entry_point) {
-    // Implementation details
-}
-```
-</details>
-
-## 📊 Performans Metrikleri
-
-| Özellik | Performans |
-|---------|------------|
-| Boot Süresi | < 3 saniye |
-| Bellek Kullanımı | 8MB |
-| Disk Kullanımı | 20MB |
-
-## 🎯 Yol Haritası
-
-```mermaid
-gantt
-    title MyOS Geliştirme Planı
-    dateFormat  YYYY-MM-DD
-    section Çekirdek
-    Bellek Yönetimi     :done,    des1, 2024-01-01, 2024-02-01
-    Süreç Yönetimi      :active,  des2, 2024-02-01, 2024-03-01
-    Dosya Sistemi       :         des3, 2024-03-01, 2024-04-01
-    GUI Sistemi         :         des4, 2024-04-01, 2024-05-01
-```
-
-## 🛠️ Kurulum ve Geliştirme
-
-### Geliştirme Ortamının Hazırlanması
-
-<details>
-<summary>Ubuntu/Debian Kurulumu</summary>
-
-```bash
-# Gerekli paketlerin kurulumu
-sudo apt-get update && sudo apt-get install -y \
-  build-essential \
-  nasm \
-  qemu-system-x86 \
-  xorriso \
-  grub-pc-bin \
-  gcc-multilib
-```
-</details>
-
-### Windows Kurulumu
-
-<details>
-<summary>WSL2 Üzerinde Kurulum</summary>
-
-```bash
-# WSL2 terminalinde çalıştırın
-sudo apt update
-sudo apt install build-essential nasm qemu-system-x86 xorriso grub-pc-bin
-```
-</details>
-
-<details>
-<summary>Native Windows Kurulumu</summary>
-
-1. [GCC for Windows](https://www.mingw-w64.org/downloads/) ve [NASM](https://www.nasm.us/) kurulumlarını yapın.
-2. QEMU için [QEMU for Windows](https://www.qemu.org/download/#windows) kurulumunu gerçekleştirin.
-3. GRUB için gerekli dosyaları [GRUB for Windows](https://www.gnu.org/software/grub/manual/grub-install/en.html) sayfasından edinin.
-4. Tüm araçların sistem PATH'ine eklendiğinden emin olun.
-```
-</details>
-
-## 🔍 Debug ve Test
-
-### GDB ile Kernel Debugging
-
-<details>
-<summary>Debug Oturumu Başlatma</summary>
-
-```bash
-# Terminal 1
-make debug
-
-# Terminal 2
-gdb build/kernel.elf
-(gdb) target remote localhost:1234
-```
-</details>
-
-<details>
-<summary>Serial Port Üzerinden Loglama</summary>
-
-```bash
-# QEMU başlatılırken serial portu etkinleştirin
-qemu-system-x86_64 -kernel build/kernel.bin -serial stdio
-```
-</details>
-
-## 🤝 Katkıda Bulunma
-
-1. Bu projeyi fork edin
-2. Feature branch'i oluşturun (`git checkout -b feature/AmazingFeature`)
-3. Değişikliklerinizi commit edin (`git commit -m 'Add some AmazingFeature'`)
-4. Branch'inize push edin (`git push origin feature/AmazingFeature`)
-5. Pull Request oluşturun
-
-## 📝 Lisans
-
-Bu proje MIT lisansı altında lisanslanmıştır. Detaylar için [LICENSE](LICENSE) dosyasını inceleyebilirsiniz.
-
-## 📱 Sosyal Medya ve İletişim
-
-<div align="center">
-  <a href="https://twitter.com/myos">
-    <img src="docs/images/twitter.png" alt="Twitter" width="32"/>
-  </a>
-  <a href="https://discord.gg/myos">
-    <img src="docs/images/discord.png" alt="Discord" width="32"/>
-  </a>
-  <a href="https://github.com/myos">
-    <img src="docs/images/github.png" alt="GitHub" width="32"/>
-  </a>
-</div>
-
-- Proje Sahibi: [Adınız Soyadınız](https://github.com/kullaniciadi)
-- E-posta: ornek@email.com
-- Twitter: [@twitter_handle](https://twitter.com/twitter_handle)
-- LinkedIn: [LinkedIn Profiliniz](https://linkedin.com/in/kullaniciadi)
-
-## 🙏 Teşekkürler
-
-Bu projeye katkıda bulunan herkese teşekkürler. Özel teşekkürler:
-- Katkıda Bulunan 1
-- Katkıda Bulunan 2
-
----
-Proje Linki: [https://github.com/kullaniciadi/myos](https://github.com/kullaniciadi/myos)
+Muhammed Said Eruslu · [GitHub](https://github.com/Muhammed-Said-Eruslu)
